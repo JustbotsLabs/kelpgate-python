@@ -1,7 +1,7 @@
 name: Publish
 
 # Push a tag such as v0.1.0 to publish that version to PyPI. Uses PyPI Trusted Publishing (no stored token):
-# on pypi.org, add this repository and the workflow name "publish.yml" with environment "pypi" as a trusted publisher.
+# on pypi.org, for the project "kelpgate-client", add this repository and the workflow name "publish.yml" with environment "pypi" as a trusted publisher.
 on:
   push:
     tags: ['v*']

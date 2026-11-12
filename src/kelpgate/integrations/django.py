@@ -21,18 +21,18 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.deconstruct import deconstructible
 
-from .. import Kelpgate, KelpgateError
+from .. import KelpgateClient, KelpgateError
 
-_client: Optional[Kelpgate] = None
+_client: Optional[KelpgateClient] = None
 
 
-def get_client() -> Kelpgate:
+def get_client() -> KelpgateClient:
     """The shared client, built from ``settings.KELPGATE`` or the ``KELPGATE_*`` environment variables."""
     global _client
     if _client is None:
         conf = getattr(settings, "KELPGATE", None) or {}
         overrides = {k.lower(): v for k, v in conf.items()}
-        _client = Kelpgate.from_env(**overrides)
+        _client = KelpgateClient.from_env(**overrides)
     return _client
 
 

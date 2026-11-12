@@ -4,7 +4,7 @@
 
 First release.
 
-- `Kelpgate` and `AsyncKelpgate`: scan files (path, bytes, file object) and URLs, sync or async, with `submit_*`, `get_result` and `wait`.
+- `KelpgateClient` and `AsyncKelpgateClient`: scan files (path, bytes, file object) and URLs, sync or async, with `submit_*`, `get_result` and `wait`.
 - OAuth2 client-credentials with a cached token, renewed before it expires, one renewal at a time.
 - Retries on network errors, 429, 502, 503 and 504; typed errors for every API status.
 - `kelpgate` command line tool with folder scanning (`-r`) and parallel workers.

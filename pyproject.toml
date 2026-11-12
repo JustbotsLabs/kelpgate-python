@@ -3,9 +3,9 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "kelpgate"
+name = "kelpgate-client"
 dynamic = ["version"]
-description = "Python client for the Kelpgate malware-scanning API: scan files and URLs, sync or async, with a CLI and FastAPI and Django helpers."
+description = "Kelpgate Client for Python: scan files and URLs for malware with the Kelpgate API, sync or async, with a CLI and FastAPI and Django helpers."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "GPL-2.0-or-later"

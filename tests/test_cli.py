@@ -8,15 +8,15 @@ from typing import Any, Dict, List
 import pytest
 
 from conftest import API, MockApi, options
-from kelpgate import Kelpgate, cli
+from kelpgate import KelpgateClient, cli
 
 
 @pytest.fixture
 def run(monkeypatch: pytest.MonkeyPatch, api: MockApi, capsys: pytest.CaptureFixture[str]) -> Any:
-    def from_env(cls: Any, env: Any = None, **overrides: Any) -> Kelpgate:
-        return Kelpgate(API, **options(transport=api.transport()))
+    def from_env(cls: Any, env: Any = None, **overrides: Any) -> KelpgateClient:
+        return KelpgateClient(API, **options(transport=api.transport()))
 
-    monkeypatch.setattr(Kelpgate, "from_env", classmethod(from_env))
+    monkeypatch.setattr(KelpgateClient, "from_env", classmethod(from_env))
 
     def go(*argv: str) -> Dict[str, Any]:
         code = cli.main(list(argv))
@@ -70,10 +70,10 @@ def test_a_folder_without_r_is_an_error(run: Any, tmp_path: Path) -> None:
 def test_errors_exit_2_and_do_not_print_the_secret(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], api: MockApi, tmp_path: Path
 ) -> None:
-    def from_env(cls: Any, env: Any = None, **o: Any) -> Kelpgate:
-        return Kelpgate(API, **options(client_secret="wrong-secret", transport=api.transport()))
+    def from_env(cls: Any, env: Any = None, **o: Any) -> KelpgateClient:
+        return KelpgateClient(API, **options(client_secret="wrong-secret", transport=api.transport()))
 
-    monkeypatch.setattr(Kelpgate, "from_env", classmethod(from_env))
+    monkeypatch.setattr(KelpgateClient, "from_env", classmethod(from_env))
     f = tmp_path / "x.txt"
     f.write_text("x")
     code = cli.main(["scan", str(f)])

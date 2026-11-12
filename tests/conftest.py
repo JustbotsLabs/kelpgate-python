@@ -16,7 +16,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
 import httpx
 import pytest
 
-from kelpgate import AsyncKelpgate, Kelpgate
+from kelpgate import AsyncKelpgateClient, KelpgateClient
 
 API = "https://api.example.test"
 TOKEN = "https://auth.example.test/oauth2/token"
@@ -138,7 +138,7 @@ def both(fn: Callable[..., Awaitable[None]]) -> Callable[..., None]:
 
             def make(url: str = API, **kw: Any) -> Any:
                 kw.setdefault("transport", api.transport())
-                client = (Kelpgate if kind == "sync" else AsyncKelpgate)(url, **kw)
+                client = (KelpgateClient if kind == "sync" else AsyncKelpgateClient)(url, **kw)
                 made.append(client)
                 return client
 

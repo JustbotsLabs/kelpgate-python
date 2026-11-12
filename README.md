@@ -1,4 +1,4 @@
-# kelpgate
+# Kelpgate Client for Python
 
 **Check every upload for malware before your app stores it.**
 
@@ -15,9 +15,9 @@ Python client for the [Kelpgate](https://kelpgate.cloud) malware-scanning API. S
 | | |
 | --- | --- |
 | **One call per file** | Send a path, bytes, a file object or a URL and get a verdict back. An infected file is a normal result, not an exception. |
-| **Sync and asyncio** | `Kelpgate` and `AsyncKelpgate` have the same methods and are fully typed. |
+| **Sync and asyncio** | `KelpgateClient` and `AsyncKelpgateClient` have the same methods and are fully typed. |
 | **Credentials handled for you** | The OAuth 2.0 access token is fetched, cached in memory and renewed before it expires, one renewal at a time. |
-| **Predictable failure behaviour** | Typed errors for quota, size, file type, rate limits and network problems. You choose what happens when the scanner cannot answer: block or allow. |
+| **Predictable failure behavior** | Typed errors for quota, size, file type, rate limits and network problems. You choose what happens when the scanner cannot answer: block or allow. |
 | **Safe by default** | API and token URLs must use HTTPS, redirects are never followed, and secrets never appear in `repr()` or errors. |
 | **Ready for your stack** | FastAPI and Django helpers and a command line tool. One runtime dependency, [httpx](https://www.python-httpx.org/). |
 
@@ -30,19 +30,19 @@ Python client for the [Kelpgate](https://kelpgate.cloud) malware-scanning API. S
 ## Install
 
 ```bash
-pip install kelpgate
+pip install kelpgate-client
 ```
 
-The package needs Python 3.9 or newer. You also need a Kelpgate account.
+The package is `kelpgate-client` on PyPI and you import it as `kelpgate`. It needs Python 3.9 or newer. You also need a Kelpgate account.
 
 ## Quick start
 
-Create an API client in the [Kelpgate console](https://console.kelpgate.cloud), then:
+Create an API client in the [Kelpgate Console](https://console.kelpgate.cloud), then:
 
 ```python
-from kelpgate import Kelpgate
+from kelpgate import KelpgateClient
 
-kg = Kelpgate(
+kg = KelpgateClient(
     "https://api.kelpgate.cloud",
     token_url="https://auth.kelpgate.cloud/oauth2/token",
     client_id="...",
@@ -54,14 +54,14 @@ if result.infected:
     print("Rejected:", result.signature)
 ```
 
-`Kelpgate.from_env()` builds the same client from `KELPGATE_CLIENT_ID` and `KELPGATE_CLIENT_SECRET` (or `KELPGATE_TOKEN`), with optional `KELPGATE_API_URL` and `KELPGATE_TOKEN_URL`. Use the client as a context manager (`with Kelpgate.from_env() as kg:`) so connections are closed.
+`KelpgateClient.from_env()` builds the same client from `KELPGATE_CLIENT_ID` and `KELPGATE_CLIENT_SECRET` (or `KELPGATE_TOKEN`), with optional `KELPGATE_API_URL` and `KELPGATE_TOKEN_URL`. Use the client as a context manager (`with KelpgateClient.from_env() as kg:`) so connections are closed.
 
-For asyncio, use `AsyncKelpgate` and `await` each call:
+For asyncio, use `AsyncKelpgateClient` and `await` each call:
 
 ```python
-from kelpgate import AsyncKelpgate
+from kelpgate import AsyncKelpgateClient
 
-async with AsyncKelpgate.from_env() as kg:
+async with AsyncKelpgateClient.from_env() as kg:
     result = await kg.scan_bytes(data, filename="report.docx")
 ```
 
@@ -90,7 +90,7 @@ Every error derives from `KelpgateError` and carries `status`, `code`, `request_
 
 | Error | When |
 | --- | --- |
-| `AuthError` | Bad credentials (401) or a suspended organisation (403) |
+| `AuthError` | Bad credentials (401) or a suspended organization (403) |
 | `QuotaExceededError` | Plan quota used up (402); has `quota`, `usage`, `upgrade_url` |
 | `PayloadTooLargeError` | File over the plan limit (413) or the client's `max_bytes` |
 | `UnsupportedFileError` | File type not allowed, or an encrypted archive (415) |
@@ -111,11 +111,11 @@ Both URLs must be `https`; plain `http` is accepted only for `localhost`. Redire
 
 ```python
 from fastapi import Depends, FastAPI, UploadFile
-from kelpgate import AsyncKelpgate
+from kelpgate import AsyncKelpgateClient
 from kelpgate.integrations.fastapi import scan_dependency
 
 app = FastAPI()
-kelpgate = AsyncKelpgate.from_env()
+kelpgate = AsyncKelpgateClient.from_env()
 
 @app.post("/upload")
 async def upload(file: UploadFile = Depends(scan_dependency(kelpgate))):
@@ -172,7 +172,7 @@ Choose `block` where stopping malware matters more than availability, and `allow
 - **Secrets:** the client secret never appears in `repr()` or in error messages. Keep it in an environment variable or a secrets manager, not in source control.
 - **Token handling:** access tokens are kept in memory only, never written to disk, and refreshed ahead of expiry. A rejected token is discarded and retried once.
 - **Nothing stored locally:** the package writes nothing to disk. Files are read from where they already are.
-- **Data kept by the service:** files that scan clean are kept briefly and infected files are quarantined, according to your Kelpgate plan. That is the service's behaviour, not this package's.
+- **Data kept by the service:** files that scan clean are kept briefly and infected files are quarantined, according to your Kelpgate plan. That is the service's behavior, not this package's.
 
 ## Compatibility
 
@@ -194,7 +194,7 @@ The scan should report `INFECTED` and exit with code `1`. Then scan any ordinary
 | --- | --- |
 | `ConfigError`: must use https | `api_url` or `token_url` is not HTTPS. Plain HTTP works only for `localhost`. |
 | `AuthError` with code `TOKEN_REQUEST_FAILED` | The client ID or secret is wrong, or the API client does not have the `scan` scope. |
-| `AuthError` with status 403 | The organisation is suspended, or the API client is not linked to an organisation. |
+| `AuthError` with status 403 | The organization is suspended, or the API client is not linked to an organization. |
 | `QuotaExceededError` | The plan's scan quota is used up. The error carries an `upgrade_url`. |
 | `RateLimitedError`, or slow scans under load | Too many scans at once. The client retries and honours `Retry-After`; lower your concurrency. |
 | `PayloadTooLargeError` | The file is over the plan limit or the client's `max_bytes`. |

@@ -33,7 +33,7 @@ from ._errors import KelpgateError, NetworkError, RequestTimeout
 from ._models import AcceptedScan, Health, PendingScan, ScanResult
 
 
-class Kelpgate:
+class KelpgateClient:
     """Client for the Kelpgate malware-scanning API. Safe to share between threads.
 
     Args:
@@ -87,7 +87,7 @@ class Kelpgate:
         self._expires_at = 0.0
 
     @classmethod
-    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> Kelpgate:
+    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> KelpgateClient:
         """Build a client from ``KELPGATE_CLIENT_ID``, ``KELPGATE_CLIENT_SECRET`` (or ``KELPGATE_TOKEN``)
         and the optional ``KELPGATE_API_URL`` and ``KELPGATE_TOKEN_URL``."""
         opts = env_options(env)
@@ -95,9 +95,9 @@ class Kelpgate:
         return cls(**opts)
 
     def __repr__(self) -> str:
-        return f"Kelpgate(api_url={self._cfg.api_url!r})"
+        return f"KelpgateClient(api_url={self._cfg.api_url!r})"
 
-    def __enter__(self) -> Kelpgate:
+    def __enter__(self) -> KelpgateClient:
         return self
 
     def __exit__(self, *exc: object) -> None:

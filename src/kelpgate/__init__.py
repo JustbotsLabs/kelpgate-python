@@ -1,16 +1,16 @@
 """Python client for the Kelpgate malware-scanning API.
 
-    from kelpgate import Kelpgate
+    from kelpgate import KelpgateClient
 
-    with Kelpgate.from_env() as kg:
+    with KelpgateClient.from_env() as kg:
         result = kg.scan_file("upload.pdf")
         if result.infected:
             print("Rejected:", result.signature)
 
-Use :class:`AsyncKelpgate` from asyncio code.
+Use :class:`AsyncKelpgateClient` from asyncio code.
 """
 
-from ._async import AsyncKelpgate
+from ._async import AsyncKelpgateClient
 from ._errors import (
     AuthError,
     ConfigError,
@@ -26,7 +26,7 @@ from ._errors import (
     UnsupportedFileError,
 )
 from ._models import AcceptedScan, Health, PendingScan, ScanResult
-from ._sync import Kelpgate
+from ._sync import KelpgateClient
 from ._version import __version__
 
 
@@ -39,12 +39,12 @@ def assert_clean(result: ScanResult) -> ScanResult:
 
 __all__ = [
     "AcceptedScan",
-    "AsyncKelpgate",
+    "AsyncKelpgateClient",
     "AuthError",
     "ConfigError",
     "Health",
     "InfectedError",
-    "Kelpgate",
+    "KelpgateClient",
     "KelpgateError",
     "NetworkError",
     "PayloadTooLargeError",

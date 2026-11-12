@@ -16,22 +16,22 @@ from conftest import API, TOKEN, MockApi, both, call, options
 
 def test_rejects_plain_http_to_a_remote_host_and_missing_credentials() -> None:
     with pytest.raises(K.ConfigError):
-        K.Kelpgate("http://example.com", **options())
+        K.KelpgateClient("http://example.com", **options())
     with pytest.raises(K.ConfigError):
-        K.Kelpgate(API, token_url=TOKEN)
+        K.KelpgateClient(API, token_url=TOKEN)
     with pytest.raises(K.ConfigError):
-        K.Kelpgate("not a url", **options())
-    K.Kelpgate("http://127.0.0.1:9", **options()).close()  # localhost may use http
+        K.KelpgateClient("not a url", **options())
+    K.KelpgateClient("http://127.0.0.1:9", **options()).close()  # localhost may use http
 
 
 def test_secrets_never_appear_in_repr_or_str() -> None:
-    kg = K.Kelpgate(API, **options())
+    kg = K.KelpgateClient(API, **options())
     assert "secret1" not in repr(kg) and "secret1" not in repr(kg._cfg)
     kg.close()
 
 
 def test_from_env_uses_production_defaults() -> None:
-    kg = K.Kelpgate.from_env({"KELPGATE_CLIENT_ID": "a", "KELPGATE_CLIENT_SECRET": "b"})
+    kg = K.KelpgateClient.from_env({"KELPGATE_CLIENT_ID": "a", "KELPGATE_CLIENT_SECRET": "b"})
     assert kg._cfg.api_url == "https://api.kelpgate.cloud"
     assert kg._cfg.token_url == "https://auth.kelpgate.cloud/oauth2/token"
     kg.close()
@@ -137,7 +137,7 @@ async def test_token_cached_across_calls(make: Any, api: MockApi) -> None:
 
 def test_concurrent_callers_share_one_token_request_sync() -> None:
     api = MockApi()
-    kg = K.Kelpgate(API, **options(transport=api.transport()))
+    kg = K.KelpgateClient(API, **options(transport=api.transport()))
     threads = [threading.Thread(target=lambda: kg.scan_bytes(b"x")) for _ in range(8)]
     [t.start() for t in threads]
     [t.join() for t in threads]
@@ -149,7 +149,7 @@ def test_concurrent_callers_share_one_token_request_async() -> None:
     api = MockApi()
 
     async def main() -> None:
-        kg = K.AsyncKelpgate(API, **options(transport=api.transport()))
+        kg = K.AsyncKelpgateClient(API, **options(transport=api.transport()))
         await asyncio.gather(*(kg.scan_bytes(b"x") for _ in range(8)))
         await kg.aclose()
 

@@ -1,4 +1,4 @@
-"""The asyncio client. Same behaviour as :class:`kelpgate.Kelpgate`, with ``await``."""
+"""The asyncio client. Same behavior as :class:`kelpgate.KelpgateClient`, with ``await``."""
 
 from __future__ import annotations
 
@@ -33,12 +33,12 @@ from ._errors import KelpgateError, NetworkError, RequestTimeout
 from ._models import AcceptedScan, Health, PendingScan, ScanResult
 
 
-class AsyncKelpgate:
+class AsyncKelpgateClient:
     """Asyncio client for the Kelpgate malware-scanning API.
 
-    Arguments are the same as :class:`kelpgate.Kelpgate`.
+    Arguments are the same as :class:`kelpgate.KelpgateClient`.
 
-    Use it as ``async with AsyncKelpgate(...) as kg:`` or call :meth:`aclose` when you are done.
+    Use it as ``async with AsyncKelpgateClient(...) as kg:`` or call :meth:`aclose` when you are done.
     """
 
     def __init__(
@@ -77,16 +77,16 @@ class AsyncKelpgate:
         self._expires_at = 0.0
 
     @classmethod
-    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> AsyncKelpgate:
-        """Build a client from ``KELPGATE_*`` environment variables, like ``Kelpgate.from_env``."""
+    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> AsyncKelpgateClient:
+        """Build a client from ``KELPGATE_*`` environment variables, like ``KelpgateClient.from_env``."""
         opts = env_options(env)
         opts.update(overrides)
         return cls(**opts)
 
     def __repr__(self) -> str:
-        return f"AsyncKelpgate(api_url={self._cfg.api_url!r})"
+        return f"AsyncKelpgateClient(api_url={self._cfg.api_url!r})"
 
-    async def __aenter__(self) -> AsyncKelpgate:
+    async def __aenter__(self) -> AsyncKelpgateClient:
         return self
 
     async def __aexit__(self, *exc: object) -> None:
