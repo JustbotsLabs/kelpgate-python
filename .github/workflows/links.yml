@@ -1,0 +1,25 @@
+name: Links
+
+# Checks every link in the Markdown files, weekly and whenever documentation changes,
+# so a moved or deleted page is noticed before a user finds it.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  pull_request:
+    paths:
+      - '**/*.md'
+      - '.github/workflows/links.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
+        with:
+          args: --no-progress --max-retries 3 --accept 200,206,429 --exclude 'localhost' --exclude 'example\.(com|test)' './**/*.md'
+          fail: true

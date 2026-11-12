@@ -46,7 +46,7 @@ class ConfigError(KelpgateError):
 
 
 class AuthError(KelpgateError):
-    """The API refused the credentials (401), or the organisation may not use it (403)."""
+    """The API refused the credentials (401), or the organization may not use it (403)."""
 
 
 class QuotaExceededError(KelpgateError):
@@ -76,7 +76,7 @@ class UnsupportedFileError(KelpgateError):
 
 
 class RateLimitedError(KelpgateError):
-    """Too many scans at once for this organisation (429)."""
+    """Too many scans at once for this organization (429)."""
 
     def __init__(self, message: str, *, retry_after: Optional[float] = None, **kw: Any) -> None:
         super().__init__(message, code="RATE_LIMITED", **kw)

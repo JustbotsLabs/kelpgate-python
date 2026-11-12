@@ -1,11 +1,11 @@
 """Scan uploads in FastAPI (or Starlette) before your handler sees them.
 
     from fastapi import Depends, FastAPI, UploadFile
-    from kelpgate import AsyncKelpgate
+    from kelpgate import AsyncKelpgateClient
     from kelpgate.integrations.fastapi import scan_dependency
 
     app = FastAPI()
-    kelpgate = AsyncKelpgate.from_env()
+    kelpgate = AsyncKelpgateClient.from_env()
 
     @app.post("/upload")
     async def upload(file: UploadFile = Depends(scan_dependency(kelpgate))):
@@ -22,7 +22,7 @@ from typing import Awaitable, Callable, Optional
 from fastapi import HTTPException, UploadFile
 
 from .. import (
-    AsyncKelpgate,
+    AsyncKelpgateClient,
     KelpgateError,
     PayloadTooLargeError,
     QuotaExceededError,
@@ -32,7 +32,7 @@ from .. import (
 
 
 async def scan_upload(
-    client: AsyncKelpgate, upload: UploadFile, *, on_error: str = "block"
+    client: AsyncKelpgateClient, upload: UploadFile, *, on_error: str = "block"
 ) -> Optional[ScanResult]:
     """Scan one uploaded file. Returns the result, or ``None`` if the scan failed and ``on_error="allow"``.
 
@@ -62,7 +62,7 @@ async def scan_upload(
 
 
 def scan_dependency(
-    client: AsyncKelpgate, *, on_error: str = "block"
+    client: AsyncKelpgateClient, *, on_error: str = "block"
 ) -> Callable[[UploadFile], Awaitable[UploadFile]]:
     """A FastAPI dependency for a form field named ``file``.
 

@@ -17,7 +17,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
-from . import Kelpgate, KelpgateError, ScanResult, __version__
+from . import KelpgateClient, KelpgateError, ScanResult, __version__
 
 _ENV_HELP = """\
 environment:
@@ -86,7 +86,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         print(json.dumps(obj) if args.json else text, flush=True)
 
     try:
-        with Kelpgate.from_env() as kg:
+        with KelpgateClient.from_env() as kg:
             if args.cmd == "health":
                 h = kg.health()
                 emit(

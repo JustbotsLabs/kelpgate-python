@@ -10,14 +10,14 @@ from fastapi.testclient import TestClient
 
 import kelpgate.integrations.django as kdjango
 from conftest import API, MockApi, options
-from kelpgate import AsyncKelpgate, Kelpgate
+from kelpgate import AsyncKelpgateClient, KelpgateClient
 from kelpgate.integrations.fastapi import scan_dependency, scan_upload
 
 # ---- FastAPI
 
 
-def make_app(api: MockApi, on_error: str = "block") -> Tuple[FastAPI, AsyncKelpgate]:
-    client = AsyncKelpgate(API, **options(max_retries=0, transport=api.transport()))
+def make_app(api: MockApi, on_error: str = "block") -> Tuple[FastAPI, AsyncKelpgateClient]:
+    client = AsyncKelpgateClient(API, **options(max_retries=0, transport=api.transport()))
     app = FastAPI()
 
     @app.post("/upload")
@@ -79,7 +79,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile  # noqa: E402
 @pytest.fixture
 def dj(api: MockApi, monkeypatch: pytest.MonkeyPatch) -> kdjango.KelpgateValidator:
     monkeypatch.setattr(
-        kdjango, "_client", Kelpgate(API, **options(max_retries=0, transport=api.transport()))
+        kdjango, "_client", KelpgateClient(API, **options(max_retries=0, transport=api.transport()))
     )
     return kdjango.KelpgateValidator()
 

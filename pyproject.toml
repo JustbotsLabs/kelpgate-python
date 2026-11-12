@@ -3,9 +3,9 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "kelpgate"
+name = "kelpgate-client"
 dynamic = ["version"]
-description = "Python client for the Kelpgate malware-scanning API: scan files and URLs, sync or async, with a CLI and FastAPI and Django helpers."
+description = "Kelpgate Client for Python: scan files and URLs for malware with the Kelpgate API, sync or async, with a CLI and FastAPI and Django helpers."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "GPL-2.0-or-later"
@@ -47,9 +47,9 @@ kelpgate = "kelpgate.cli:main"
 [project.urls]
 Homepage = "https://kelpgate.cloud"
 Documentation = "https://kelpgate.cloud/guides/"
-Repository = "https://github.com/JustBots-Labs/kelpgate-python"
-Issues = "https://github.com/JustBots-Labs/kelpgate-python/issues"
-Changelog = "https://github.com/JustBots-Labs/kelpgate-python/blob/main/CHANGELOG.md"
+Repository = "https://github.com/KelpGate/kelpgate-python"
+Issues = "https://github.com/KelpGate/kelpgate-python/issues"
+Changelog = "https://github.com/KelpGate/kelpgate-python/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "src/kelpgate/_version.py"
@@ -66,6 +66,7 @@ addopts = "-ra"
 
 [tool.ruff]
 line-length = 110
+extend-exclude = ["*.md"]
 target-version = "py39"
 src = ["src", "tests"]
 

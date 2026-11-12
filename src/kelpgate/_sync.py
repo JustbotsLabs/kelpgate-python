@@ -33,7 +33,7 @@ from ._errors import KelpgateError, NetworkError, RequestTimeout
 from ._models import AcceptedScan, Health, PendingScan, ScanResult
 
 
-class Kelpgate:
+class KelpgateClient:
     """Client for the Kelpgate malware-scanning API. Safe to share between threads.
 
     Args:
@@ -87,7 +87,7 @@ class Kelpgate:
         self._expires_at = 0.0
 
     @classmethod
-    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> Kelpgate:
+    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> KelpgateClient:
         """Build a client from ``KELPGATE_CLIENT_ID``, ``KELPGATE_CLIENT_SECRET`` (or ``KELPGATE_TOKEN``)
         and the optional ``KELPGATE_API_URL`` and ``KELPGATE_TOKEN_URL``."""
         opts = env_options(env)
@@ -95,9 +95,9 @@ class Kelpgate:
         return cls(**opts)
 
     def __repr__(self) -> str:
-        return f"Kelpgate(api_url={self._cfg.api_url!r})"
+        return f"KelpgateClient(api_url={self._cfg.api_url!r})"
 
-    def __enter__(self) -> Kelpgate:
+    def __enter__(self) -> KelpgateClient:
         return self
 
     def __exit__(self, *exc: object) -> None:
@@ -226,22 +226,22 @@ class Kelpgate:
         """Ask the service to fetch and scan a remote file."""
         return scan_outcome(*self._request("POST", "/api/v1/scan/url", json_body={"url": str(url)}))
 
-    def submit_file(
+    def scan_file_async(
         self, source: Source, *, filename: Optional[str] = None, webhook_url: Optional[str] = None
     ) -> AcceptedScan:
-        """Start an asynchronous scan. Collect the result with :meth:`get_result` or :meth:`wait`."""
+        """Start an asynchronous scan. Collect it with :meth:`get_async_result` or :meth:`wait_for_result`."""
         upload = prepare_upload(source, filename, self._cfg.max_bytes)
         form = {"webhook_url": webhook_url} if webhook_url else None
         return accepted_outcome(*self._request("POST", "/api/v1/async-scan/file", upload=upload, form=form))
 
-    def submit_url(self, url: str, *, webhook_url: Optional[str] = None) -> AcceptedScan:
+    def scan_url_async(self, url: str, *, webhook_url: Optional[str] = None) -> AcceptedScan:
         """Start an asynchronous scan of a remote file."""
         body: Dict[str, str] = {"url": str(url)}
         if webhook_url:
             body["webhook_url"] = webhook_url
         return accepted_outcome(*self._request("POST", "/api/v1/async-scan/url", json_body=body))
 
-    def get_result(self, scan_id: str, *, kind: str = "file") -> Union[ScanResult, PendingScan]:
+    def get_async_result(self, scan_id: str, *, kind: str = "file") -> Union[ScanResult, PendingScan]:
         """Read an asynchronous result. Returns a :class:`PendingScan` until the verdict is ready."""
         which = "url" if kind == "url" else "file"
         status, data, headers = self._request(
@@ -249,13 +249,13 @@ class Kelpgate:
         )
         return poll_outcome(scan_id, status, data, headers)
 
-    def wait(
+    def wait_for_result(
         self, scan_id: str, *, kind: str = "file", interval: float = 1.0, timeout: float = 120.0
     ) -> ScanResult:
         """Poll until an asynchronous scan finishes. Raises :class:`RequestTimeout` if it takes too long."""
         deadline = time.monotonic() + timeout
         while True:
-            result = self.get_result(scan_id, kind=kind)
+            result = self.get_async_result(scan_id, kind=kind)
             if isinstance(result, ScanResult):
                 return result
             if time.monotonic() + interval > deadline:
@@ -265,3 +265,9 @@ class Kelpgate:
     def health(self) -> Health:
         """Check that the service is up. Needs no credentials."""
         return health_outcome(*self._request("GET", "/api/v1/health", auth=False))
+
+    # Names used before 0.2.0, kept so existing code keeps working.
+    submit_file = scan_file_async
+    submit_url = scan_url_async
+    get_result = get_async_result
+    wait = wait_for_result

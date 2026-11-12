@@ -20,7 +20,7 @@ class ScanResult:
     #: Detection name, or ``"OK"`` for a clean file.
     signature: str
     sha256: Optional[str] = None
-    #: Authors of the rules that matched, for rule-licence attribution.
+    #: Authors of the rules that matched, for rule-license attribution.
     rule_authors: Tuple[str, ...] = ()
     filename: Optional[str] = None
     scan_id: Optional[str] = None
@@ -39,7 +39,7 @@ class ScanResult:
 
 @dataclass(frozen=True)
 class PendingScan:
-    """Returned by :meth:`Kelpgate.get_result` while an asynchronous scan is still running."""
+    """Returned by :meth:`KelpgateClient.get_async_result` while an asynchronous scan is still running."""
 
     scan_id: str
     request_id: Optional[str] = None

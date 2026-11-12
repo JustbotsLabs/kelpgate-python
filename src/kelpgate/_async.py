@@ -1,4 +1,4 @@
-"""The asyncio client. Same behaviour as :class:`kelpgate.Kelpgate`, with ``await``."""
+"""The asyncio client. Same behavior as :class:`kelpgate.KelpgateClient`, with ``await``."""
 
 from __future__ import annotations
 
@@ -33,12 +33,12 @@ from ._errors import KelpgateError, NetworkError, RequestTimeout
 from ._models import AcceptedScan, Health, PendingScan, ScanResult
 
 
-class AsyncKelpgate:
+class AsyncKelpgateClient:
     """Asyncio client for the Kelpgate malware-scanning API.
 
-    Arguments are the same as :class:`kelpgate.Kelpgate`.
+    Arguments are the same as :class:`kelpgate.KelpgateClient`.
 
-    Use it as ``async with AsyncKelpgate(...) as kg:`` or call :meth:`aclose` when you are done.
+    Use it as ``async with AsyncKelpgateClient(...) as kg:`` or call :meth:`aclose` when you are done.
     """
 
     def __init__(
@@ -77,16 +77,16 @@ class AsyncKelpgate:
         self._expires_at = 0.0
 
     @classmethod
-    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> AsyncKelpgate:
-        """Build a client from ``KELPGATE_*`` environment variables, like ``Kelpgate.from_env``."""
+    def from_env(cls, env: Optional[Mapping[str, str]] = None, **overrides: Any) -> AsyncKelpgateClient:
+        """Build a client from ``KELPGATE_*`` environment variables, like ``KelpgateClient.from_env``."""
         opts = env_options(env)
         opts.update(overrides)
         return cls(**opts)
 
     def __repr__(self) -> str:
-        return f"AsyncKelpgate(api_url={self._cfg.api_url!r})"
+        return f"AsyncKelpgateClient(api_url={self._cfg.api_url!r})"
 
-    async def __aenter__(self) -> AsyncKelpgate:
+    async def __aenter__(self) -> AsyncKelpgateClient:
         return self
 
     async def __aexit__(self, *exc: object) -> None:
@@ -213,24 +213,24 @@ class AsyncKelpgate:
         """Ask the service to fetch and scan a remote file."""
         return scan_outcome(*await self._request("POST", "/api/v1/scan/url", json_body={"url": str(url)}))
 
-    async def submit_file(
+    async def scan_file_async(
         self, source: Source, *, filename: Optional[str] = None, webhook_url: Optional[str] = None
     ) -> AcceptedScan:
-        """Start an asynchronous scan. Collect the result with :meth:`get_result` or :meth:`wait`."""
+        """Start an asynchronous scan. Collect it with :meth:`get_async_result` or :meth:`wait_for_result`."""
         upload = prepare_upload(source, filename, self._cfg.max_bytes)
         form = {"webhook_url": webhook_url} if webhook_url else None
         return accepted_outcome(
             *await self._request("POST", "/api/v1/async-scan/file", upload=upload, form=form)
         )
 
-    async def submit_url(self, url: str, *, webhook_url: Optional[str] = None) -> AcceptedScan:
+    async def scan_url_async(self, url: str, *, webhook_url: Optional[str] = None) -> AcceptedScan:
         """Start an asynchronous scan of a remote file."""
         body: Dict[str, str] = {"url": str(url)}
         if webhook_url:
             body["webhook_url"] = webhook_url
         return accepted_outcome(*await self._request("POST", "/api/v1/async-scan/url", json_body=body))
 
-    async def get_result(self, scan_id: str, *, kind: str = "file") -> Union[ScanResult, PendingScan]:
+    async def get_async_result(self, scan_id: str, *, kind: str = "file") -> Union[ScanResult, PendingScan]:
         """Read an asynchronous result. Returns a :class:`PendingScan` until the verdict is ready."""
         which = "url" if kind == "url" else "file"
         status, data, headers = await self._request(
@@ -238,13 +238,13 @@ class AsyncKelpgate:
         )
         return poll_outcome(scan_id, status, data, headers)
 
-    async def wait(
+    async def wait_for_result(
         self, scan_id: str, *, kind: str = "file", interval: float = 1.0, timeout: float = 120.0
     ) -> ScanResult:
         """Poll until an asynchronous scan finishes. Raises :class:`RequestTimeout` if it takes too long."""
         deadline = time.monotonic() + timeout
         while True:
-            result = await self.get_result(scan_id, kind=kind)
+            result = await self.get_async_result(scan_id, kind=kind)
             if isinstance(result, ScanResult):
                 return result
             if time.monotonic() + interval > deadline:
@@ -254,3 +254,9 @@ class AsyncKelpgate:
     async def health(self) -> Health:
         """Check that the service is up. Needs no credentials."""
         return health_outcome(*await self._request("GET", "/api/v1/health", auth=False))
+
+    # Names used before 0.2.0, kept so existing code keeps working.
+    submit_file = scan_file_async
+    submit_url = scan_url_async
+    get_result = get_async_result
+    wait = wait_for_result
