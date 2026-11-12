@@ -10,9 +10,13 @@ Python client for the [Kelpgate](https://kelpgate.cloud) malware-scanning API. S
 
 > This package is open source under GPL-2.0-or-later. It is a client for the Kelpgate scanning service, a hosted commercial product that is not part of this package. You need a Kelpgate account to use it.
 
+## Install
+
 ```bash
 pip install kelpgate
 ```
+
+The package needs Python 3.9 or newer. You also need a Kelpgate account.
 
 ## Quick start
 
@@ -133,6 +137,14 @@ Exit code `0` clean, `1` infected, `2` error. Add `--json` for one JSON object p
 ## Compatibility
 
 Python 3.9, 3.10, 3.11, 3.12 and 3.13, with `httpx` 0.25 or later. The test suite runs on every one of those Python versions, with Django 4.2, 5.2 and 6.1 and a current FastAPI.
+
+## Support and versioning
+
+This project follows [Semantic Versioning](https://semver.org): breaking changes only in major versions, new features in minor versions, fixes in patch versions. Releases are tagged on GitHub, and user-visible changes are listed in the [changelog](CHANGELOG.md).
+
+Fixes, including security fixes, go into the latest release only, so upgrade to receive them. The tested runtime versions are listed under Compatibility. The client talks to version 1 of the Kelpgate API (`/api/v1`).
+
+For help, see [getting help](https://github.com/KelpGate/.github/blob/main/SUPPORT.md) or email support@kelpgate.cloud.
 
 ## Contributing and security
 
