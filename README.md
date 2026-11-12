@@ -136,7 +136,7 @@ Python 3.9, 3.10, 3.11, 3.12 and 3.13, with `httpx` 0.25 or later. The test suit
 
 ## Contributing and security
 
-Bug reports and pull requests are welcome; see the [contributing guide](https://github.com/JustBots-Labs/.github/blob/main/CONTRIBUTING.md). To report a vulnerability, email security@kelpgate.cloud or follow the [security policy](https://github.com/JustBots-Labs/.github/blob/main/SECURITY.md). For help, see [getting help](https://github.com/JustBots-Labs/.github/blob/main/SUPPORT.md).
+Bug reports and pull requests are welcome; see the [contributing guide](https://github.com/KelpGate/.github/blob/main/CONTRIBUTING.md). To report a vulnerability, email security@kelpgate.cloud or follow the [security policy](https://github.com/KelpGate/.github/blob/main/SECURITY.md). For help, see [getting help](https://github.com/KelpGate/.github/blob/main/SUPPORT.md).
 
 ```bash
 pip install -e ".[dev]"

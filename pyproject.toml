@@ -47,9 +47,9 @@ kelpgate = "kelpgate.cli:main"
 [project.urls]
 Homepage = "https://kelpgate.cloud"
 Documentation = "https://kelpgate.cloud/guides/"
-Repository = "https://github.com/JustBots-Labs/kelpgate-python"
-Issues = "https://github.com/JustBots-Labs/kelpgate-python/issues"
-Changelog = "https://github.com/JustBots-Labs/kelpgate-python/blob/main/CHANGELOG.md"
+Repository = "https://github.com/KelpGate/kelpgate-python"
+Issues = "https://github.com/KelpGate/kelpgate-python/issues"
+Changelog = "https://github.com/KelpGate/kelpgate-python/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
 path = "src/kelpgate/_version.py"
