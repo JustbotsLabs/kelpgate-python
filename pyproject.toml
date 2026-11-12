@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "Kelpgate Client for Python: scan files and URLs for malware with the Kelpgate API, sync or async, with a CLI and FastAPI and Django helpers."
 readme = "README.md"
 requires-python = ">=3.9"
-license = "GPL-2.0-or-later"
+license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "JustBots Labs" }]
 keywords = ["kelpgate", "malware", "antivirus", "virus-scan", "clamav", "yara", "upload", "fastapi", "django"]

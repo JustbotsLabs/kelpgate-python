@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0
+
+- The license changed from GPL-2.0-or-later to MIT, so the package can be used in proprietary software as well as open-source software. Versions published earlier remain available under the GPL. The WordPress plugin and Drupal module stay GPL, as WordPress.org and Drupal.org require.
+- No code changes.
+
 ## 0.2.0
 
 - Method names now match the other Kelpgate clients (see the [Kelpgate client standard](https://github.com/KelpGate/.github/blob/main/docs/client-standard.md)): `scan_file_async`, `scan_url_async`, `get_async_result` and `wait_for_result`.
