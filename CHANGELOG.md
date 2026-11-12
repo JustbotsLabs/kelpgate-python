@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Package metadata names JustBots Labs as the author. No code changes.
+
 ## 0.1.0
 
 First release.
