@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = "GPL-2.0-or-later"
 license-files = ["LICENSE"]
-authors = [{ name = "JustBots Labs" }]
+authors = [{ name = "Kelpgate" }]
 keywords = ["kelpgate", "malware", "antivirus", "virus-scan", "clamav", "yara", "upload", "fastapi", "django"]
 classifiers = [
   "Development Status :: 4 - Beta",
