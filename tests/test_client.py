@@ -269,19 +269,19 @@ async def test_network_failure_and_timeout(make: Any, api: MockApi) -> None:
 @both
 async def test_submit_poll_and_wait(make: Any, api: MockApi) -> None:
     kg = make(**options())
-    acc = await call(kg.submit_file(b"hello", filename="a.txt", webhook_url="https://example.com/hook"))
+    acc = await call(kg.scan_file_async(b"hello", filename="a.txt", webhook_url="https://example.com/hook"))
     assert acc.scan_id == "scan-1"
     assert b'name="webhook_url"' in api.requests[-1].content
-    first = await call(kg.get_result(acc.scan_id))
+    first = await call(kg.get_async_result(acc.scan_id))
     assert isinstance(first, K.PendingScan)
-    done = await call(kg.wait(acc.scan_id, interval=0.001, timeout=5))
+    done = await call(kg.wait_for_result(acc.scan_id, interval=0.001, timeout=5))
     assert done.status == "CLEAN"
 
 
 @both
 async def test_submit_url_sends_the_webhook(make: Any, api: MockApi) -> None:
     kg = make(**options())
-    acc = await call(kg.submit_url("https://example.com/f", webhook_url="https://example.com/hook"))
+    acc = await call(kg.scan_url_async("https://example.com/f", webhook_url="https://example.com/hook"))
     assert acc.scan_id == "scan-2" and b"example.com/hook" in api.requests[-1].content
 
 
@@ -289,7 +289,7 @@ async def test_submit_url_sends_the_webhook(make: Any, api: MockApi) -> None:
 async def test_wait_times_out(make: Any, api: MockApi) -> None:
     api.poll_until = 10**9
     with pytest.raises(K.RequestTimeout):
-        await call(make(**options()).wait("scan-1", interval=0.005, timeout=0.03))
+        await call(make(**options()).wait_for_result("scan-1", interval=0.005, timeout=0.03))
 
 
 @both

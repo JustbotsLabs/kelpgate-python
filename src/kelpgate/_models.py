@@ -39,7 +39,7 @@ class ScanResult:
 
 @dataclass(frozen=True)
 class PendingScan:
-    """Returned by :meth:`KelpgateClient.get_result` while an asynchronous scan is still running."""
+    """Returned by :meth:`KelpgateClient.get_async_result` while an asynchronous scan is still running."""
 
     scan_id: str
     request_id: Optional[str] = None

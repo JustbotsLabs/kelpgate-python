@@ -72,10 +72,12 @@ async with AsyncKelpgateClient.from_env() as kg:
 | `scan_file(source)` | Scan a path, `bytes` or a binary file object |
 | `scan_bytes(data)` | Same, for bytes in memory |
 | `scan_url(url)` | Kelpgate fetches the URL and scans it |
-| `submit_file(source)`, `submit_url(url)` | Start an asynchronous scan and get a `scan_id`. Pass `webhook_url` to be called back |
-| `get_result(scan_id)` | A `PendingScan` until the verdict is ready, then a `ScanResult` |
-| `wait(scan_id, interval=1, timeout=120)` | Poll until the scan finishes |
+| `scan_file_async(source)`, `scan_url_async(url)` | Start an asynchronous scan and get a `scan_id`. Pass `webhook_url` to be called back |
+| `get_async_result(scan_id)` | A `PendingScan` until the verdict is ready, then a `ScanResult` |
+| `wait_for_result(scan_id, interval=1, timeout=120)` | Poll until the scan finishes |
 | `health()` | Service status. Needs no credentials |
+
+The names match the other Kelpgate clients ([client standard](https://github.com/KelpGate/.github/blob/main/docs/client-standard.md)). The 0.1.x names `submit_file`, `submit_url`, `get_result` and `wait` still work as aliases.
 
 A `ScanResult` has `infected`, `status`, `signature`, `sha256`, `scan_id`, `rule_authors`, `request_id` and the full response in `raw`. Two flags are worth checking:
 
@@ -198,7 +200,7 @@ The scan should report `INFECTED` and exit with code `1`. Then scan any ordinary
 | `QuotaExceededError` | The plan's scan quota is used up. The error carries an `upgrade_url`. |
 | `RateLimitedError`, or slow scans under load | Too many scans at once. The client retries and honours `Retry-After`; lower your concurrency. |
 | `PayloadTooLargeError` | The file is over the plan limit or the client's `max_bytes`. |
-| `RequestTimeout` on large files | Raise `timeout`, or use `submit_file` and `wait`. |
+| `RequestTimeout` on large files | Raise `timeout`, or use `scan_file_async` and `wait_for_result`. |
 | Clean results with `degraded` set | An engine did not finish for that scan. The result is still valid; coverage was reduced. |
 
 ## Support and versioning

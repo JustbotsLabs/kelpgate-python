@@ -226,22 +226,22 @@ class KelpgateClient:
         """Ask the service to fetch and scan a remote file."""
         return scan_outcome(*self._request("POST", "/api/v1/scan/url", json_body={"url": str(url)}))
 
-    def submit_file(
+    def scan_file_async(
         self, source: Source, *, filename: Optional[str] = None, webhook_url: Optional[str] = None
     ) -> AcceptedScan:
-        """Start an asynchronous scan. Collect the result with :meth:`get_result` or :meth:`wait`."""
+        """Start an asynchronous scan. Collect it with :meth:`get_async_result` or :meth:`wait_for_result`."""
         upload = prepare_upload(source, filename, self._cfg.max_bytes)
         form = {"webhook_url": webhook_url} if webhook_url else None
         return accepted_outcome(*self._request("POST", "/api/v1/async-scan/file", upload=upload, form=form))
 
-    def submit_url(self, url: str, *, webhook_url: Optional[str] = None) -> AcceptedScan:
+    def scan_url_async(self, url: str, *, webhook_url: Optional[str] = None) -> AcceptedScan:
         """Start an asynchronous scan of a remote file."""
         body: Dict[str, str] = {"url": str(url)}
         if webhook_url:
             body["webhook_url"] = webhook_url
         return accepted_outcome(*self._request("POST", "/api/v1/async-scan/url", json_body=body))
 
-    def get_result(self, scan_id: str, *, kind: str = "file") -> Union[ScanResult, PendingScan]:
+    def get_async_result(self, scan_id: str, *, kind: str = "file") -> Union[ScanResult, PendingScan]:
         """Read an asynchronous result. Returns a :class:`PendingScan` until the verdict is ready."""
         which = "url" if kind == "url" else "file"
         status, data, headers = self._request(
@@ -249,13 +249,13 @@ class KelpgateClient:
         )
         return poll_outcome(scan_id, status, data, headers)
 
-    def wait(
+    def wait_for_result(
         self, scan_id: str, *, kind: str = "file", interval: float = 1.0, timeout: float = 120.0
     ) -> ScanResult:
         """Poll until an asynchronous scan finishes. Raises :class:`RequestTimeout` if it takes too long."""
         deadline = time.monotonic() + timeout
         while True:
-            result = self.get_result(scan_id, kind=kind)
+            result = self.get_async_result(scan_id, kind=kind)
             if isinstance(result, ScanResult):
                 return result
             if time.monotonic() + interval > deadline:
@@ -265,3 +265,9 @@ class KelpgateClient:
     def health(self) -> Health:
         """Check that the service is up. Needs no credentials."""
         return health_outcome(*self._request("GET", "/api/v1/health", auth=False))
+
+    # Names used before 0.2.0, kept so existing code keeps working.
+    submit_file = scan_file_async
+    submit_url = scan_url_async
+    get_result = get_async_result
+    wait = wait_for_result
