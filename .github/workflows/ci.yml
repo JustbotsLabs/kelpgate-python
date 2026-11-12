@@ -11,7 +11,8 @@ permissions:
 jobs:
   test:
     name: Python ${{ matrix.python }}
-    runs-on: ubuntu-latest
+    # ubuntu-latest no longer ships Python 3.9, which this package supports
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:

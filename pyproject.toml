@@ -66,6 +66,7 @@ addopts = "-ra"
 
 [tool.ruff]
 line-length = 110
+extend-exclude = ["*.md"]
 target-version = "py39"
 src = ["src", "tests"]
 
