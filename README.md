@@ -1,14 +1,31 @@
 # kelpgate
 
-Python client for the [Kelpgate](https://kelpgate.cloud) malware-scanning API. Scan uploaded files or remote URLs, get a verdict, and keep infected files out of your app.
+**Check every upload for malware before your app stores it.**
 
-- Sync and asyncio clients with the same methods, fully typed.
-- Handles the OAuth2 token for you: fetched once, cached, renewed before it expires.
-- Retries transient failures. Typed errors for quota, size, file type and rate limits.
-- A `kelpgate` command line tool, plus helpers for FastAPI and Django.
-- Python 3.9 to 3.13. One runtime dependency, [httpx](https://www.python-httpx.org/).
+Python client for the [Kelpgate](https://kelpgate.cloud) malware-scanning API. Scan uploaded files or remote URLs, get a verdict, and keep infected files out of your app. It includes sync and asyncio clients, helpers for FastAPI and Django, and a command line tool.
 
 > This package is open source under GPL-2.0-or-later. It is a client for the Kelpgate scanning service, a hosted commercial product that is not part of this package. You need a Kelpgate account to use it.
+
+## Contents
+
+[Why Kelpgate](#why-kelpgate) · [How it works](#how-it-works) · [Install](#install) · [Quick start](#quick-start) · [Scanning](#scanning) · [Errors](#errors) · [Options](#options) · [FastAPI](#fastapi) · [Django](#django) · [Command line](#command-line) · [Failure policy](#failure-policy) · [Security and privacy](#security-and-privacy) · [Compatibility](#compatibility) · [Verify your setup](#verify-your-setup) · [Troubleshooting](#troubleshooting) · [Support and versioning](#support-and-versioning) · [Contributing and security](#contributing-and-security) · [License](#license)
+
+## Why Kelpgate
+
+| | |
+| --- | --- |
+| **One call per file** | Send a path, bytes, a file object or a URL and get a verdict back. An infected file is a normal result, not an exception. |
+| **Sync and asyncio** | `Kelpgate` and `AsyncKelpgate` have the same methods and are fully typed. |
+| **Credentials handled for you** | The OAuth 2.0 access token is fetched, cached in memory and renewed before it expires, one renewal at a time. |
+| **Predictable failure behaviour** | Typed errors for quota, size, file type, rate limits and network problems. You choose what happens when the scanner cannot answer: block or allow. |
+| **Safe by default** | API and token URLs must use HTTPS, redirects are never followed, and secrets never appear in `repr()` or errors. |
+| **Ready for your stack** | FastAPI and Django helpers and a command line tool. One runtime dependency, [httpx](https://www.python-httpx.org/). |
+
+## How it works
+
+1. The client obtains an OAuth 2.0 access token with your client credentials. Tokens are cached and renewed shortly before they expire.
+2. The file is sent to the scanning API over HTTPS.
+3. The API answers with a verdict. A clean file and an infected file (HTTP 406) both come back as a result with `infected` set to `False` or `True`. Anything that stops a verdict, such as an exhausted quota or an unreachable service, is raised as a typed error. Your code, or the FastAPI and Django helpers, decide what to do next.
 
 ## Install
 
@@ -65,7 +82,7 @@ A `ScanResult` has `infected`, `status`, `signature`, `sha256`, `scan_id`, `rule
 - `policy_rejected`: the file was refused by policy (for example a disallowed type), not detected as malware.
 - `degraded`: an engine did not finish, so coverage was reduced for this scan.
 
-An infected file is a normal result, not an exception. Call `assert_clean(result)` if you prefer an exception. Files given as paths or file objects are streamed, not read into memory, and a retry sends the whole file again.
+An infected file is a normal result, not an exception. Call `assert_clean(result)` if you prefer an exception. Paths and seekable file objects are streamed, not read into memory; other streams are buffered in memory up to `max_bytes`. A retry sends the whole file again.
 
 ## Errors
 
@@ -134,9 +151,55 @@ kelpgate health
 
 Exit code `0` clean, `1` infected, `2` error. Add `--json` for one JSON object per line. Folders are scanned without following symbolic links.
 
+## Failure policy
+
+When the scanner cannot give a verdict, the client raises a typed error. The FastAPI and Django helpers turn that into a decision you control with `on_error`.
+
+| Situation | Client | FastAPI, `on_error="block"` (default) | Django, `on_error="block"` (default) | `on_error="allow"` |
+| --- | --- | --- | --- | --- |
+| Scanner unreachable, timed out or returned 5xx after retries | Raises `NetworkError`, `RequestTimeout` or `ServerError` | `503` | Validation error `scan_unavailable` | Upload continues |
+| Authentication fails | Raises `AuthError` | `503` | `scan_unavailable` | Continues |
+| Plan quota used up | Raises `QuotaExceededError` | `402` | `scan_unavailable` | Continues |
+| File over the plan limit or `max_bytes` | Raises `PayloadTooLargeError` | `413` | `scan_unavailable` | Continues |
+| File type not allowed | Raises `UnsupportedFileError` | `415` | `scan_unavailable` | Continues |
+
+Choose `block` where stopping malware matters more than availability, and `allow` where uploads must keep working during an outage.
+
+## Security and privacy
+
+- **What leaves your server:** the uploaded file and its file name, sent over HTTPS to the API URL you configure. Nothing else about your application is sent.
+- **Transport:** API and token endpoints must use HTTPS (plain HTTP is accepted only for `localhost`). Redirects are never followed.
+- **Secrets:** the client secret never appears in `repr()` or in error messages. Keep it in an environment variable or a secrets manager, not in source control.
+- **Token handling:** access tokens are kept in memory only, never written to disk, and refreshed ahead of expiry. A rejected token is discarded and retried once.
+- **Nothing stored locally:** the package writes nothing to disk. Files are read from where they already are.
+- **Data kept by the service:** files that scan clean are kept briefly and infected files are quarantined, according to your Kelpgate plan. That is the service's behaviour, not this package's.
+
 ## Compatibility
 
 Python 3.9, 3.10, 3.11, 3.12 and 3.13, with `httpx` 0.25 or later. The test suite runs on every one of those Python versions, with Django 4.2, 5.2 and 6.1 and a current FastAPI.
+
+## Verify your setup
+
+Download the standard EICAR test file from [eicar.org](https://www.eicar.org/download-anti-malware-testfile/). It is a harmless file that every scanner treats as a virus.
+
+```bash
+kelpgate scan ./eicar.com
+```
+
+The scan should report `INFECTED` and exit with code `1`. Then scan any ordinary file and confirm it reports `clean` and exits with `0`.
+
+## Troubleshooting
+
+| Symptom | Likely cause |
+| --- | --- |
+| `ConfigError`: must use https | `api_url` or `token_url` is not HTTPS. Plain HTTP works only for `localhost`. |
+| `AuthError` with code `TOKEN_REQUEST_FAILED` | The client ID or secret is wrong, or the API client does not have the `scan` scope. |
+| `AuthError` with status 403 | The organisation is suspended, or the API client is not linked to an organisation. |
+| `QuotaExceededError` | The plan's scan quota is used up. The error carries an `upgrade_url`. |
+| `RateLimitedError`, or slow scans under load | Too many scans at once. The client retries and honours `Retry-After`; lower your concurrency. |
+| `PayloadTooLargeError` | The file is over the plan limit or the client's `max_bytes`. |
+| `RequestTimeout` on large files | Raise `timeout`, or use `submit_file` and `wait`. |
+| Clean results with `degraded` set | An engine did not finish for that scan. The result is still valid; coverage was reduced. |
 
 ## Support and versioning
 
@@ -155,6 +218,6 @@ pip install -e ".[dev]"
 pytest && ruff check . && mypy
 ```
 
-## Licence
+## License
 
 GPL-2.0-or-later. See [LICENSE](LICENSE). The GPL applies to software you distribute that includes this package; using it on your own server does not require you to publish your code.
