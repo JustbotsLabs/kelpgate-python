@@ -27,6 +27,7 @@ from ._common import (
     poll_outcome,
     prepare_upload,
     request_id_of,
+    resolve_idempotency_key,
     scan_outcome,
 )
 from ._errors import KelpgateError, NetworkError, RequestTimeout
@@ -147,12 +148,15 @@ class AsyncKelpgateClient:
         upload: Optional[PreparedUpload] = None,
         form: Optional[Dict[str, str]] = None,
         auth: bool = True,
+        idempotency_key: Optional[str] = None,
     ) -> tuple[int, Dict[str, Any], httpx.Headers]:
         cfg = self._cfg
         token_retried = False
         attempt = 0
         while True:
             headers = {"User-Agent": cfg.user_agent, "Accept": "application/json"}
+            if idempotency_key:
+                headers["Idempotency-Key"] = idempotency_key
             opened: Any = None
             must_close = False
             try:
@@ -198,37 +202,66 @@ class AsyncKelpgateClient:
 
     # ---- scanning
 
-    async def scan_file(self, source: Source, *, filename: Optional[str] = None) -> ScanResult:
-        """Scan a file given as a path, ``bytes`` or a binary file object, and return the verdict."""
+    async def scan_file(
+        self, source: Source, *, filename: Optional[str] = None, idempotency_key: Optional[str] = None
+    ) -> ScanResult:
+        """Scan a file given as a path, ``bytes`` or a binary file object, and return the verdict.
+
+        ``idempotency_key`` makes retries safe: the service counts a request repeated under the same key only
+        once. By default a random key is used for each call and reused by the client's own retries.
+        """
+        key = resolve_idempotency_key(idempotency_key)
         upload = prepare_upload(source, filename, self._cfg.max_bytes)
-        return scan_outcome(*await self._request("POST", "/api/v1/scan/file", upload=upload))
+        return scan_outcome(
+            *await self._request("POST", "/api/v1/scan/file", upload=upload, idempotency_key=key)
+        )
 
     async def scan_bytes(
-        self, data: Union[bytes, bytearray, memoryview], *, filename: Optional[str] = None
+        self,
+        data: Union[bytes, bytearray, memoryview],
+        *,
+        filename: Optional[str] = None,
+        idempotency_key: Optional[str] = None,
     ) -> ScanResult:
         """Scan bytes you already have in memory."""
-        return await self.scan_file(data, filename=filename)
+        return await self.scan_file(data, filename=filename, idempotency_key=idempotency_key)
 
-    async def scan_url(self, url: str) -> ScanResult:
+    async def scan_url(self, url: str, *, idempotency_key: Optional[str] = None) -> ScanResult:
         """Ask the service to fetch and scan a remote file."""
-        return scan_outcome(*await self._request("POST", "/api/v1/scan/url", json_body={"url": str(url)}))
+        key = resolve_idempotency_key(idempotency_key)
+        return scan_outcome(
+            *await self._request("POST", "/api/v1/scan/url", json_body={"url": str(url)}, idempotency_key=key)
+        )
 
     async def scan_file_async(
-        self, source: Source, *, filename: Optional[str] = None, webhook_url: Optional[str] = None
+        self,
+        source: Source,
+        *,
+        filename: Optional[str] = None,
+        webhook_url: Optional[str] = None,
+        idempotency_key: Optional[str] = None,
     ) -> AcceptedScan:
         """Start an asynchronous scan. Collect it with :meth:`get_async_result` or :meth:`wait_for_result`."""
+        key = resolve_idempotency_key(idempotency_key)
         upload = prepare_upload(source, filename, self._cfg.max_bytes)
         form = {"webhook_url": webhook_url} if webhook_url else None
         return accepted_outcome(
-            *await self._request("POST", "/api/v1/async-scan/file", upload=upload, form=form)
+            *await self._request(
+                "POST", "/api/v1/async-scan/file", upload=upload, form=form, idempotency_key=key
+            )
         )
 
-    async def scan_url_async(self, url: str, *, webhook_url: Optional[str] = None) -> AcceptedScan:
+    async def scan_url_async(
+        self, url: str, *, webhook_url: Optional[str] = None, idempotency_key: Optional[str] = None
+    ) -> AcceptedScan:
         """Start an asynchronous scan of a remote file."""
+        key = resolve_idempotency_key(idempotency_key)
         body: Dict[str, str] = {"url": str(url)}
         if webhook_url:
             body["webhook_url"] = webhook_url
-        return accepted_outcome(*await self._request("POST", "/api/v1/async-scan/url", json_body=body))
+        return accepted_outcome(
+            *await self._request("POST", "/api/v1/async-scan/url", json_body=body, idempotency_key=key)
+        )
 
     async def get_async_result(self, scan_id: str, *, kind: str = "file") -> Union[ScanResult, PendingScan]:
         """Read an asynchronous result. Returns a :class:`PendingScan` until the verdict is ready."""

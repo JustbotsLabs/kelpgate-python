@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import io
 import threading
+import uuid
 from typing import Any
 
 import httpx
@@ -297,3 +298,77 @@ async def test_health_needs_no_credentials(make: Any, api: MockApi) -> None:
     h = await call(make(bearer_token="x").health())
     assert (h.ok, h.signature_version) == (True, "v-test")
     assert "authorization" not in api.requests[-1].headers
+
+
+# ---- Idempotency-Key
+
+
+def _scans(api: MockApi, path: str) -> list[httpx.Request]:
+    return [q for q in api.requests if q.url.path == path]
+
+
+@both
+async def test_every_scan_sends_a_key_and_retries_reuse_it(make: Any, api: MockApi) -> None:
+    api.fail_next.extend([(503, {}, {}), (502, {}, {})])
+    await call(make(**options(max_retries=2)).scan_bytes(b"ok"))
+    sent = _scans(api, "/api/v1/scan/file")
+    assert len(sent) == 3
+    key = sent[0].headers["idempotency-key"]
+    assert uuid.UUID(key).version == 4
+    assert all(q.headers["idempotency-key"] == key for q in sent)
+
+
+@both
+async def test_separate_calls_get_separate_keys(make: Any, api: MockApi) -> None:
+    kg = make(**options())
+    await call(kg.scan_bytes(b"one"))
+    await call(kg.scan_bytes(b"two"))
+    first, second = _scans(api, "/api/v1/scan/file")
+    assert first.headers["idempotency-key"] != second.headers["idempotency-key"]
+
+
+@both
+async def test_the_retry_after_a_401_reuses_the_same_key(make: Any, api: MockApi) -> None:
+    api.fail_next.append((401, {"error": "unauthorized"}, {}))
+    await call(make(**options()).scan_bytes(b"ok"))
+    sent = _scans(api, "/api/v1/scan/file")
+    assert len(sent) == 2
+    assert sent[1].headers["idempotency-key"] == sent[0].headers["idempotency-key"]
+
+
+@both
+async def test_a_key_you_pass_is_sent_as_given_on_every_scan_operation(make: Any, api: MockApi) -> None:
+    kg = make(**options())
+    key = "job-42:upload.1"
+    await call(kg.scan_file(b"ok", idempotency_key=key))
+    await call(kg.scan_bytes(b"ok", idempotency_key=key))
+    await call(kg.scan_url("https://example.com/f.bin", idempotency_key=key))
+    await call(kg.scan_file_async(b"ok", idempotency_key=key))
+    await call(kg.scan_url_async("https://example.com/f.bin", idempotency_key=key))
+    for path in ("/api/v1/scan/url", "/api/v1/async-scan/file", "/api/v1/async-scan/url"):
+        assert _scans(api, path)[0].headers["idempotency-key"] == key, path
+    assert [q.headers["idempotency-key"] for q in _scans(api, "/api/v1/scan/file")] == [key, key]
+
+
+@both
+async def test_an_invalid_key_is_a_config_error_before_any_request(make: Any, api: MockApi) -> None:
+    kg = make(**options())
+    for bad in ["", "has space", "a/b", "x" * 129, "ünï", "ok\n", 123]:
+        before = len([q for q in api.requests if q.url.path.startswith("/api/")])
+        with pytest.raises(K.ConfigError):
+            await call(kg.scan_bytes(b"ok", idempotency_key=bad))
+        with pytest.raises(K.ConfigError):
+            await call(kg.scan_url("https://example.com/f.bin", idempotency_key=bad))
+        assert len([q for q in api.requests if q.url.path.startswith("/api/")]) == before, repr(bad)
+    r = await call(kg.scan_bytes(b"ok", idempotency_key="x" * 128))  # the longest allowed key
+    assert not r.infected
+
+
+@both
+async def test_calls_that_are_not_counted_do_not_send_a_key(make: Any, api: MockApi) -> None:
+    kg = make(**options())
+    await call(kg.health())
+    await call(kg.get_async_result("scan-1"))
+    sent = [q for q in api.requests if q.url.path.startswith("/api/")]
+    assert len(sent) >= 2
+    assert all("idempotency-key" not in q.headers for q in sent)
