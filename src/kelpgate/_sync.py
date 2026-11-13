@@ -26,8 +26,8 @@ from ._common import (
     parse_token,
     poll_outcome,
     prepare_upload,
-    resolve_idempotency_key,
     request_id_of,
+    resolve_idempotency_key,
     scan_outcome,
 )
 from ._errors import KelpgateError, NetworkError, RequestTimeout
