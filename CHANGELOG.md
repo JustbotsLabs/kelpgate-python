@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0
+
+- Every scan now sends an `Idempotency-Key`, so a retry after a timeout or a 502, 503 or 504 is not counted against your quota twice. The client makes a random key for each call and reuses it on its own retries; no change is needed in your code.
+- New optional `idempotency_key` argument on `scan_file`, `scan_bytes`, `scan_url`, `scan_file_async` and `scan_url_async` (sync and async clients), to protect your own retries (a job id, for example). An invalid key (not 1 to 128 characters from `A-Za-z0-9._:-`) raises `ConfigError` before any request. Do not reuse one key for different files: the service counts a different file under the same key as a new scan.
+- See the [Kelpgate client standard](https://github.com/KelpGate/.github/blob/main/docs/client-standard.md#idempotency).
+
 ## 0.3.0
 
 - The license changed from GPL-2.0-or-later to MIT, so the package can be used in proprietary software as well as open-source software. Versions published earlier remain available under the GPL. The WordPress plugin and Drupal module stay GPL, as WordPress.org and Drupal.org require.

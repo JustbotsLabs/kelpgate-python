@@ -8,6 +8,7 @@ import os
 import random
 import re
 import urllib.parse
+import uuid
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, BinaryIO, Dict, Mapping, Optional, Tuple, Union
@@ -109,6 +110,24 @@ def env_options(env: Optional[Mapping[str, str]] = None) -> Dict[str, Any]:
         "client_secret": e.get("KELPGATE_CLIENT_SECRET"),
         "bearer_token": e.get("KELPGATE_TOKEN"),
     }
+
+
+# What the service accepts as an Idempotency-Key: 1 to 128 of these characters.
+IDEMPOTENCY_KEY = re.compile(r"[A-Za-z0-9._:-]{1,128}")
+
+
+def resolve_idempotency_key(key: Optional[str]) -> str:
+    """The Idempotency-Key for one scan call.
+
+    The service counts a request repeated under the same key only once, so the key is made once per
+    call and reused by every retry of that call. A key you pass is used as given; without one, a random
+    UUID is used.
+    """
+    if key is None:
+        return str(uuid.uuid4())
+    if not isinstance(key, str) or not IDEMPOTENCY_KEY.fullmatch(key):
+        raise ConfigError("idempotency_key must be 1 to 128 characters from A-Z a-z 0-9 . _ : -")
+    return key
 
 
 def basic_auth_header(client_id: str, client_secret: str) -> str:

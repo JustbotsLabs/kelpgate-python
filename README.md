@@ -86,6 +86,18 @@ A `ScanResult` has `infected`, `status`, `signature`, `sha256`, `scan_id`, `rule
 
 An infected file is a normal result, not an exception. Call `assert_clean(result)` if you prefer an exception. Paths and seekable file objects are streamed, not read into memory; other streams are buffered in memory up to `max_bytes`. A retry sends the whole file again.
 
+### Retries and your quota
+
+Every scan call sends an `Idempotency-Key`. The client makes a random one for each call and reuses it on its own retries, so a retry after a timeout or a 502, 503 or 504 is not counted against your quota twice. You do not have to do anything.
+
+Pass `idempotency_key` to protect retries you make yourself, for example one key per upload job:
+
+```python
+result = kg.scan_file(path, idempotency_key=f"job-{job.id}")
+```
+
+A key is 1 to 128 characters from `A-Za-z0-9._:-` (anything else raises `ConfigError`). The service ties a key to the file: the same key on a different file is counted as a new scan, so never reuse one key for different uploads.
+
 ## Errors
 
 Every error derives from `KelpgateError` and carries `status`, `code`, `request_id` (quote it to support) and the response `body`.
