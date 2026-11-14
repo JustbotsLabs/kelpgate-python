@@ -27,7 +27,7 @@ jobs:
           version="${GITHUB_REF_NAME#v}"
           awk -v v="$version" '$0 == "## " v {found=1; next} /^## / {if (found) exit} found' CHANGELOG.md > release-notes.md
           test -s release-notes.md || { echo "::error::CHANGELOG.md has no entry for $version"; exit 1; }
-      - run: pip install -e ".[dev]"
+      - run: pip install --only-binary :all: -e ".[dev]"
       - run: pytest
       - run: python -m build
       - run: twine check dist/*
